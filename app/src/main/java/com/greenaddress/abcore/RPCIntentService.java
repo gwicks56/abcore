@@ -29,7 +29,11 @@ public class RPCIntentService extends IntentService {
     private static final String TAG = RPCIntentService.class.getName();
 
     public RPCIntentService() {
+
+
         super(RPCIntentService.class.getName());
+
+        Log.d(TAG, "RPCIntentService: in constructor 1");
     }
 
     private Properties getBitcoinConf() throws IOException {

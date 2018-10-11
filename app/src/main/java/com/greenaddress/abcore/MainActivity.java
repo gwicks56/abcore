@@ -5,8 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -93,6 +96,28 @@ public class MainActivity extends AppCompatActivity {
         mProgressBar = findViewById(R.id.progressBar);
         setSupportActionBar(toolbar);
         setSwitch();
+
+
+
+        // first attempt at fix:
+
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Log.d(TAG, "onCreate: starting battery optimization");
+
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+
+            boolean battery = pm.isIgnoringBatteryOptimizations(packageName);
+            Log.d(TAG, "onCreate: battery booolean is: " + battery);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Log.d(TAG, "onCreate: not ignoring ");
+                launchBatteryOptimizationDialog();
+            }
+
+
+            Log.d(TAG, "onCreate: after launch the boolean is: " + pm.isIgnoringBatteryOptimizations(packageName));
+        }
     }
 
     @Override
@@ -174,5 +199,18 @@ public class MainActivity extends AppCompatActivity {
                     postConfigure();
             }
         }
+    }
+
+    public void launchBatteryOptimizationDialog(){
+
+        DialogFragment batteryOpt = new BatteryOptimizationDialog();
+        batteryOpt.setCancelable(false);
+        batteryOpt.show(getSupportFragmentManager(), "battery");
+
+
+
+
+
+
     }
 }

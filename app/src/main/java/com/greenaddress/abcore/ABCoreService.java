@@ -86,9 +86,12 @@ public class ABCoreService extends Service {
         if (mProcess != null || intent == null)
             return START_STICKY;
         Log.i(TAG, "Core service msg");
+        Log.d(TAG, "onStartCommand: this is ABC core service, where is the best place to add my stuff");
 
         // start core
         try {
+
+            Log.d(TAG, "onStartCommand: starting core");
 
             // allow to pass in a different datadir directory
 
