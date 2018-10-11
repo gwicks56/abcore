@@ -98,12 +98,15 @@ public class MainActivity extends AppCompatActivity {
         setSwitch();
 
 
-
-        // first attempt at fix:
+        /**
+         * Basic fix before we decide how to do it
+         * We could leave like this, and automatically ask every user - PROBABLY NOT RECOMMENDED
+         * This change IS NOT needed for people plugged into power, Doze mode does not activate on battery power ( mostly, some manufacturers cannot be trusted)
+         * I would suggest another toggle, like the ON SWITCH, or alternatively, we could add it as an option in settings
+         */
 
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Log.d(TAG, "onCreate: starting battery optimization");
 
             String packageName = getPackageName();
             PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
@@ -114,8 +117,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "onCreate: not ignoring ");
                 launchBatteryOptimizationDialog();
             }
-
-
             Log.d(TAG, "onCreate: after launch the boolean is: " + pm.isIgnoringBatteryOptimizations(packageName));
         }
     }
@@ -201,16 +202,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // method to launch the dialog
+
     public void launchBatteryOptimizationDialog(){
 
         DialogFragment batteryOpt = new BatteryOptimizationDialog();
         batteryOpt.setCancelable(false);
         batteryOpt.show(getSupportFragmentManager(), "battery");
-
-
-
-
-
-
     }
 }
