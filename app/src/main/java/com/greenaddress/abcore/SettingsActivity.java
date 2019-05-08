@@ -36,6 +36,7 @@ import java.util.Properties;
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
     private final static String TAG = SettingsActivity.class.getName();
+
     /**
      * Helper method to determine if the device has an extra-large screen. For
      * example, 10" tablets are extra-large.
@@ -43,6 +44,17 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     private static boolean isXLargeTablet(final Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
+    }
+
+    private static void deleteRF(final File f) {
+
+        Log.v(TAG, "Deleting " + f.getAbsolutePath() + "/" + f.getName());
+        if (f.isDirectory())
+            for (File child : f.listFiles())
+                deleteRF(child);
+
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
     }
 
     @Override
@@ -69,7 +81,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public boolean onIsMultiPane() {
         return isXLargeTablet(this);
     }
-
 
     /**
      * {@inheritDoc}
@@ -192,16 +203,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
     }
 
-    private static void deleteRF(final File f) {
-
-        Log.v(TAG, "Deleting " + f.getAbsolutePath() + "/" + f.getName());
-        if (f.isDirectory())
-            for (File child : f.listFiles())
-                deleteRF(child);
-
-        f.delete();
-    }
-
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class AndroidPreferenceFragment extends PreferenceFragment {
 
@@ -217,6 +218,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     final File dir = Utils.getDir(getActivity());
                     deleteRF(new File(dir, "shachecks"));
                     deleteRF(new File(dir, "bitcoind"));
+                    deleteRF(new File(dir, "liquidd"));
                     getActivity().finish();
                     return true;
                 }

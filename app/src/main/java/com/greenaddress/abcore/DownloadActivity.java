@@ -4,10 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,6 +30,28 @@ public class DownloadActivity extends AppCompatActivity {
     private TextView mTvDetails;
     private View mContent;
 
+    private static String niceFlat(final float f, final String s) {
+        if ((int) f == f)
+            return String.format("@ %s %s", f, s);
+        return String.format(Locale.US, "@ %.2f %s", f, s);
+    }
+
+    private static String getSpeed(final int bytesPerSec) {
+        if (bytesPerSec == 0)
+            return "";
+
+        if (bytesPerSec >= 1024 * 1024 * 1024)
+            return niceFlat((float) bytesPerSec / (1024 * 1024 * 1024), "GB/s");
+
+        if (bytesPerSec >= 1024 * 1024)
+            return niceFlat((float) bytesPerSec / (1024 * 1024), "MB/s");
+
+        if (bytesPerSec >= 1024)
+            return String.format("@ %s KB/s", bytesPerSec / 1024);
+
+        return String.format("@ %s B/s", bytesPerSec);
+    }
+
     private void showSnackMsg(final String msg) {
         if (msg != null && !msg.trim().isEmpty())
             Snackbar.make(mContent, msg, Snackbar.LENGTH_INDEFINITE).show();
@@ -47,34 +71,12 @@ public class DownloadActivity extends AppCompatActivity {
 
         try {
             Utils.getArch();
-        } catch (final Utils.UnsupportedArch e) {
+        } catch (final Utils.ABIsUnsupported e) {
             mButton.setEnabled(false);
-            final String msg = getString(R.string.archunsupported, e.arch);
+            final String msg = getString(R.string.abis_unsupported, TextUtils.join(",", Build.SUPPORTED_ABIS));
             mTvStatus.setText(msg);
             showSnackMsg(msg);
         }
-    }
-
-    private static String niceFlat(final float f, final String s) {
-        if ((int) f == f)
-            return String.format("@ %s %s", f, s);
-        return String.format(Locale.US, "@ %.2f %s", f, s);
-    }
-
-    private static String getSpeed(final int bytesPerSec) {
-        if (bytesPerSec == 0)
-            return "";
-
-        if (bytesPerSec >= 1024 * 1024 * 1024)
-            return niceFlat((float) bytesPerSec / (1024 * 1024 * 1024), "GB/s");
-
-        if (bytesPerSec >= 1024 * 1024)
-            return niceFlat((float) bytesPerSec / (1024 * 1024 ), "MB/s");
-
-        if (bytesPerSec >= 1024)
-            return String.format("@ %s KB/s", bytesPerSec / 1024);
-
-        return String.format("@ %s B/s", bytesPerSec);
     }
 
     @Override
@@ -88,7 +90,7 @@ public class DownloadActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        if (Utils.isBitcoinCoreConfigured(this))
+        if (Utils.isDaemonInstalled(this))
             finish();
 
         final IntentFilter downloadFilter = new IntentFilter(DownloadInstallCoreResponseReceiver.ACTION_RESP);
@@ -114,6 +116,23 @@ public class DownloadActivity extends AppCompatActivity {
     private void disableWhileDownloading() {
         mButton.setEnabled(false);
         mTvStatus.setText(R.string.waitfetchingconfiguring);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(final Menu menu) {
+        final MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.download, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        // Handle item selection
+        if (item.getItemId() == R.id.download_distributions) {
+            startActivity(new Intent(this, DownloadSettingsActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     public class DownloadInstallCoreResponseReceiver extends BroadcastReceiver {
@@ -148,24 +167,4 @@ public class DownloadActivity extends AppCompatActivity {
             }
         }
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(final Menu menu) {
-        final MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.download, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(final MenuItem item) {
-        // Handle item selection
-        switch (item.getItemId()) {
-            case R.id.download_distributions:
-                startActivity(new Intent(this, DownloadSettingsActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
 }

@@ -1,12 +1,15 @@
 package com.greenaddress.abcore;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Build;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.BufferedInputStream;
@@ -26,11 +29,11 @@ class Utils {
 
     private final static String TAG = Utils.class.getSimpleName();
 
-    static void extractTarGz(final File input, final File outputDir) throws IOException {
+    static void extractTarXz(final File input, final File outputDir) throws IOException {
         TarArchiveInputStream in = null;
         try {
 
-            in = new TarArchiveInputStream(new BufferedInputStream(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(input)))));
+            in = new TarArchiveInputStream(new BufferedInputStream(new XZCompressorInputStream(new BufferedInputStream(new FileInputStream(input)))));
 
             ArchiveEntry entry;
 
@@ -51,12 +54,14 @@ class Utils {
                 }
 
                 final int mode = ((TarArchiveEntry) entry).getMode();
+                //noinspection ResultOfMethodCallIgnored
                 f.setExecutable(true, (mode & 1) == 0);
             }
 
         } finally {
             IOUtils.closeQuietly(in);
         }
+        //noinspection ResultOfMethodCallIgnored
         input.delete();
     }
 
@@ -114,16 +119,19 @@ class Utils {
     }
 
     static String getArch() {
-        final String arch = System.getProperty("os.arch");
-        if (arch.endsWith("86"))
-            return "i686-linux-android";
-        else if (arch.startsWith("armv7"))
-            return "arm-linux-androideabi";
-        else if (arch.endsWith("86_64"))
-            return "x86_64-linux-android";
-        else if ("aarch64".equals(arch) || "armv8l".equals(arch))
-            return "aarch64-linux-android";
-        throw new UnsupportedArch(arch);
+        for (final String abi : Build.SUPPORTED_ABIS) {
+            switch (abi) {
+                case "armeabi-v7a":
+                    return "arm-linux-androideabi";
+                case "arm64-v8a":
+                    return "aarch64-linux-android";
+                case "x86":
+                    return "i686-linux-android";
+                case "x86_64":
+                    return "x86_64-linux-android";
+            }
+        }
+        throw new ABIsUnsupported();
     }
 
     static File getDir(final Context c) {
@@ -163,7 +171,7 @@ class Utils {
         final String hash = Utils.sha256Hex(filePath);
         final String sha256hash = sha256raw.substring(sha256raw.indexOf(arch) + arch.length());
         Log.d(TAG, hash);
-        return sha256hash.equals(hash) ? null: hash;
+        return sha256hash.equals(hash) ? null : hash;
     }
 
     static void validateSha256sum(final String arch, final String sha256raw, final String filePath) throws IOException, NoSuchAlgorithmException {
@@ -172,16 +180,21 @@ class Utils {
             throw new ValidationFailure(String.format("File %s doesn't match sha256sum %s", filePath, diff));
     }
 
+    static boolean isDaemonInstalled(final Context c) {
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        final String useDistribution = prefs.getString("usedistribution", "core");
+        final String daemon = "liquid".equals(useDistribution) ? "liquidd" : "bitcoind";
+        return new File(Utils.getDir(c).getAbsolutePath() + "/" + daemon).exists()
+                && new File(Utils.getDir(c).getAbsolutePath() + "/tor").exists();
+    }
+
     interface OnDownloadUpdate {
         void update(final int bytesPerSecond, final int bytesDownloaded);
     }
 
-    static class UnsupportedArch extends RuntimeException {
-        final String arch;
-
-        UnsupportedArch(final String a) {
-            super(UnsupportedArch.class.getName());
-            this.arch = a;
+    static class ABIsUnsupported extends RuntimeException {
+        ABIsUnsupported() {
+            super(ABIsUnsupported.class.getName());
         }
     }
 
@@ -189,9 +202,5 @@ class Utils {
         ValidationFailure(final String s) {
             super(s);
         }
-    }
-
-    static boolean isBitcoinCoreConfigured(final Context c) {
-        return new File(Utils.getDir(c).getAbsolutePath() + "/bitcoind").exists();
     }
 }

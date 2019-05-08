@@ -5,33 +5,46 @@ import java.util.List;
 
 class Packages {
 
-    final static String BITCOIN_NDK = "0.17.0";
-    final static String BITCOIN_KNOTS_NDK = "0.16.3";
-
-
-    private final static String URL = "https://github.com/greenaddress/bitcoin_ndk/releases/download/v0.17.0/%s_bitcoin%s.tar.gz";
-    private final static String URL_KNOTS = "https://github.com/greenaddress/bitcoin_ndk/releases/download/v0.16.3/%s_bitcoin%s.tar.gz";
-
-
+    final static String BITCOIN_NDK = "0.18.0";
+    final static String BITCOIN_KNOTS_NDK = "0.18.0";
+    final static String BITCOIN_LIQUID_NDK = "0.17.0";
     final static List<String> NATIVE_CORE = Arrays.asList(
-            "3825885arm-linux-androideabib4b3be79c859c83ca02ac12b70fceb3e800eb15580addd7b48bb1b896a32c302",
-            "3903585aarch64-linux-android51c129708b2ae4a4bc223fff1b486d6a62cabbfaaf6b8b7a9ef3aa71ac8f1ab8",
-            "4250511x86_64-linux-androide688b8592e660c52c39aba98ec141d1799f501bdd23af2f9e3fdb60541b3b466",
-            "4127210i686-linux-android5ae74105f98e0e0737ef40950f0078d3b504c50b34348bfb93a76f7cc37379da"
+            "4613524aarch64-linux-androidff97eb601200cae77ea89b1370f1606eddf7c53cd17ad0a9f7974539bfd270cc",
+            "4509768arm-linux-androideabi5b80ae53728f4d55620a0b3c7e0b30c412e1b36f9ec24f5ff8f7e62a565d0fa9",
+            "5247152i686-linux-androida44d181025addf73522fb80968e56dd5dade55a02287f192a80f360c6f75adb3",
+            "5448412x86_64-linux-androida30ca997e201ff80f6852769a00637b7e5676a51b2ba9c7f666c2253edcfa278"
     );
-
-
     final static List<String> NATIVE_KNOTS = Arrays.asList(
-            "4004146arm-linux-androideabi241d614774733ab68d98299e6eb9c313238ad27830e8364d03006f7543b00a34",
-            "3998141aarch64-linux-androidb415944c32948f4ceab4447087e5031aed06acc57120f7a45f55300862258373",
-            "4411787x86_64-linux-androidcf05c6d6be9d628a0bc6fc2c3bf9202e84f9afc1d6a0db3f995aa59261fffa5d",
-            "4320595i686-linux-android14c0d2249d91b679f69bea52ffe1343284142c4dde02622aefee0c30bee86c9c"
+            "4686912aarch64-linux-androide97670dfb990e2a7e33226fc70501ef9ac7083e432c70ce331d1a4728177c6eb",
+            "4589528arm-linux-androideabia5e965ef0994a7f59c9a56bc052df48bc7c34fde9576f3a34ba60f8eacb2dd20",
+            "5335788i686-linux-android0cdc5b500c30cc1ba0bb2cbfbcdc2cbcd15cbb7294859bd3dbcfbb59f51fd5c9",
+            "5537272x86_64-linux-android4ce5226c02fae19941a6a5cca8fc1cb0a9ae932b8f48d672e6991b19e0844fec"
     );
+    final static List<String> NATIVE_LIQUID = Arrays.asList(
+            "4692064aarch64-linux-androida2e95410e3b78d4078499c27b1c82532f5eacb30a05144a9518689e505a3f67b",
+            "4604416arm-linux-androideabie00046d14e9fb8e4587d549a4dc8ba4ce3b26c1dfc55365d6e06dfbcd55e56fb",
+            "5362300i686-linux-androida646243f5fe5c32c211844ade509390765bd3af47f055901556915f866a51b67",
+            "5572612x86_64-linux-androidc2a5cfcdb69fe7ba45ac1109db1c9570108782162b619d2a30490a08f343d68f"
+    );
+    private final static String URL = "https://github.com/greenaddress/bitcoin_ndk/releases/download/v0.18.0c/%s_bitcoin%s.tar.xz";
+    private final static String URL_KNOTS = "https://github.com/greenaddress/bitcoin_ndk/releases/download/v0.18.0c/%s_bitcoin%s.tar.xz";
+    private final static String URL_LIQUID = "https://github.com/greenaddress/bitcoin_ndk/releases/download/v0.18.0c/%s_%s.tar.xz";
 
     static String getPackageUrl(final String distro, final String arch) {
-        if (distro.equals("core")) {
+        if ("core".equals(distro)) {
             return String.format(URL, arch, "");
+        } else if ("liquid".equals(distro)) {
+            return String.format(URL_LIQUID, arch, "liquid");
         }
         return String.format(URL_KNOTS, arch, "knots");
+    }
+
+    static String getVersion(final String distro) {
+        if ("core".equals(distro)) {
+            return BITCOIN_NDK;
+        } else if ("liquid".equals(distro)) {
+            return BITCOIN_LIQUID_NDK;
+        }
+        return BITCOIN_KNOTS_NDK;
     }
 }

@@ -31,6 +31,7 @@ public class DownloadInstallCoreIntentService extends IntentService {
         final File coreConf = new File(Utils.getBitcoinConf(c));
         if (coreConf.exists())
             return;
+        //noinspection ResultOfMethodCallIgnored
         coreConf.getParentFile().mkdirs();
 
         FileOutputStream outputStream;
@@ -48,7 +49,8 @@ public class DownloadInstallCoreIntentService extends IntentService {
             //outputStream.write("regtest=1\n".getBytes());
             outputStream.write("upnp=0\n".getBytes());
             // don't attempt onion connections by default
-            outputStream.write("onlynet=ipv4\n".getBytes());
+            outputStream.write("validatepegin=0\n".getBytes());
+            outputStream.write("listenonion=1\n".getBytes());
             outputStream.write("blocksonly=1\n".getBytes());
             for (final File f : c.getExternalFilesDirs(null))
                 outputStream.write(String.format("# for external storage try: %s\n", f.getCanonicalPath()).getBytes());
@@ -64,6 +66,20 @@ public class DownloadInstallCoreIntentService extends IntentService {
         }
     }
 
+    private static void markAsDone(final String sha, final File outputDir) throws IOException {
+        final File shadir = new File(outputDir, "shachecks");
+        if (!shadir.exists())
+            //noinspection ResultOfMethodCallIgnored
+            shadir.mkdir();
+        if (!new File(shadir, sha).createNewFile())
+            throw new IOException();
+    }
+
+    private static boolean isUnpacked(final String sha, final File outputDir) {
+        final File shadir = new File(outputDir, "shachecks");
+        return new File(shadir, sha).exists();
+    }
+
     @Override
     protected void onHandleIntent(final Intent intent) {
         HAS_BEEN_STARTED = true;
@@ -77,18 +93,16 @@ public class DownloadInstallCoreIntentService extends IntentService {
 
             final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-            final String useDistribution = prefs.getString("usedistribution", prefs.getBoolean("useknots", false) ? "knots" : "core");
-            final List<String> distro = useDistribution.equals("knots") ? Packages.NATIVE_KNOTS : Packages.NATIVE_CORE;
-
-
+            final String useDistribution = prefs.getString("usedistribution", "core");
+            final List<String> distro = "knots".equals(useDistribution) ? Packages.NATIVE_KNOTS : "liquid".equals(useDistribution) ? Packages.NATIVE_LIQUID : Packages.NATIVE_CORE;
 
             final String url = Packages.getPackageUrl(useDistribution, arch);
             final String filePath = Utils.getFilePathFromUrl(this, url);
             String rawSha = null;
             int bs = 0;
             for (final String a : distro) {
-                final String hash = a.substring(7, a.length());
-                bs = Integer.parseInt(a.substring(0,7));
+                final String hash = a.substring(7);
+                bs = Integer.parseInt(a.substring(0, 7));
                 if (hash.startsWith(arch)) {
                     rawSha = hash;
                     break;
@@ -117,7 +131,7 @@ public class DownloadInstallCoreIntentService extends IntentService {
 
             sendUpdate("Uncompressing", useDistribution);
 
-            Utils.extractTarGz(new File(filePath), dir);
+            Utils.extractTarXz(new File(filePath), dir);
 
             // bitcoin core & deps installed, configure it now
             configureCore(this);
@@ -158,29 +172,15 @@ public class DownloadInstallCoreIntentService extends IntentService {
         broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);
         broadcastIntent.putExtra(PARAM_OUT_MSG, "ABCOREUPDATE");
 
-        broadcastIntent.putExtra("ABCOREUPDATE",  bytesDownloaded);
-        broadcastIntent.putExtra("ABCOREUPDATEMAX",  bytesSize);
+        broadcastIntent.putExtra("ABCOREUPDATE", bytesDownloaded);
+        broadcastIntent.putExtra("ABCOREUPDATEMAX", bytesSize);
         if (bytesPerSec != null)
             broadcastIntent.putExtra("ABCOREUPDATESPEED", bytesPerSec);
 
 
-
-        broadcastIntent.putExtra("ABCOREUPDATETXT", String.format("%s %s %s", upd, fileExtracted, fileExtracted.equals("knots") ? Packages.BITCOIN_KNOTS_NDK : Packages.BITCOIN_NDK));
+        broadcastIntent.putExtra("ABCOREUPDATETXT", String.format("%s %s %s", upd, fileExtracted, "knots".equals(fileExtracted) ? Packages.BITCOIN_KNOTS_NDK : "liquid".equals(fileExtracted) ? Packages.BITCOIN_LIQUID_NDK : Packages.BITCOIN_NDK));
 
 
         sendBroadcast(broadcastIntent);
-    }
-
-    private static void markAsDone(final String sha, final File outputDir) throws IOException {
-        final File shadir = new File(outputDir, "shachecks");
-        if (!shadir.exists())
-            shadir.mkdir();
-        if (!new File(shadir, sha).createNewFile())
-            throw new IOException();
-    }
-
-    private static boolean isUnpacked(final String sha, final File outputDir) {
-        final File shadir = new File(outputDir, "shachecks");
-        return new File(shadir, sha).exists();
     }
 }

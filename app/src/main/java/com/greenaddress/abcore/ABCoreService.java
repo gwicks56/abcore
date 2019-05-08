@@ -21,8 +21,9 @@ public class ABCoreService extends Service {
 
     private final static String TAG = ABCoreService.class.getName();
     private final static int NOTIFICATION_ID = 922430164;
-    private Process mProcess;
     private static final String PARAM_OUT_MSG = "rpccore";
+    private Process mProcess;
+    private Process mProcessTor;
 
     private static void removeNotification(final Context c) {
         ((NotificationManager) c.getSystemService(NOTIFICATION_SERVICE)).cancel(NOTIFICATION_ID);
@@ -39,7 +40,7 @@ public class ABCoreService extends Service {
         return null;
     }
 
-    private void setupNotification() {
+    private void setupNotificationAndMoveToForeground() {
         final Intent i = new Intent(this, MainActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                 Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -48,7 +49,7 @@ public class ABCoreService extends Service {
         final NotificationManager nM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        final String version = prefs.getBoolean("useknots", false) ? Packages.BITCOIN_KNOTS_NDK : Packages.BITCOIN_NDK;
+        final String version = Packages.getVersion(prefs.getString("version", Packages.BITCOIN_NDK));
 
         final Notification.Builder b = new Notification.Builder(this)
                 .setContentTitle("ABCore is running")
@@ -72,7 +73,7 @@ public class ABCoreService extends Service {
 
         final Notification n = b.build();
 
-        nM.notify(NOTIFICATION_ID, n);
+        startForeground(NOTIFICATION_ID, n);
 
         final Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(MainActivity.RPCResponseReceiver.ACTION_RESP);
@@ -85,31 +86,38 @@ public class ABCoreService extends Service {
     public int onStartCommand(final Intent intent, final int flags, final int startId) {
         if (mProcess != null || intent == null)
             return START_STICKY;
+
+
         Log.i(TAG, "Core service msg");
 
-        // start core
         try {
 
-            // allow to pass in a different datadir directory
-
-            // HACK: if user sets a datadir in the bitcoin.conf file that should then be the one
-            // used
             android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
             final String path = getNoBackupFilesDir().getCanonicalPath();
-            final ProcessBuilder pb = new ProcessBuilder(
-                    String.format("%s/bitcoind", path),
-                    "--server=1",
-                    String.format("--datadir=%s", Utils.getDataDir(this)),
-                    String.format("--conf=%s", Utils.getBitcoinConf(this)));
 
-            pb.directory(new File(path));
+            final ProcessBuilder torpb = new ProcessBuilder(
+                    String.format("%s/%s", path, "tor"),
+                    "SafeSocks",
+                    "1",
+                    "SocksPort",
+                    "auto",
+                    "NoExec",
+                    "1",
+                    "CookieAuthentication",
+                    "1",
+                    "ControlPort",
+                    "9051",
+                    "DataDirectory",
+                    path + "/tordata"
+            );
 
+            torpb.directory(new File(path));
 
-            mProcess = pb.start();
+            mProcessTor = torpb.start();
+
             final ProcessLogger.OnError er = new ProcessLogger.OnError() {
                 @Override
                 public void onError(final String[] error) {
-                    removeNotification(ABCoreService.this);
                     mProcess = null;
                     final StringBuilder bf = new StringBuilder();
                     for (final String e : error)
@@ -119,13 +127,36 @@ public class ABCoreService extends Service {
                     Log.i(TAG, bf.toString());
                 }
             };
+            final ProcessLogger torErrorGobbler = new ProcessLogger(mProcessTor.getErrorStream(), er);
+            final ProcessLogger torOutputGobbler = new ProcessLogger(mProcessTor.getInputStream(), er);
+
+            torErrorGobbler.start();
+            torOutputGobbler.start();
+
+            // allow to pass in a different datadir directory
+
+            // HACK: if user sets a datadir in the bitcoin.conf file that should then be the one
+            // used
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            final String useDistribution = prefs.getString("usedistribution", "core");
+            final String daemon = "liquid".equals(useDistribution) ? "liquidd" : "bitcoind";
+            final ProcessBuilder pb = new ProcessBuilder(
+                    String.format("%s/%s", path, daemon),
+                    "--server=1",
+                    String.format("--datadir=%s", Utils.getDataDir(this)),
+                    String.format("--conf=%s", Utils.getBitcoinConf(this)));
+
+            pb.directory(new File(path));
+
+            mProcess = pb.start();
+
             final ProcessLogger errorGobbler = new ProcessLogger(mProcess.getErrorStream(), er);
             final ProcessLogger outputGobbler = new ProcessLogger(mProcess.getInputStream(), er);
 
             errorGobbler.start();
             outputGobbler.start();
 
-            setupNotification();
+            setupNotificationAndMoveToForeground();
 
         } catch (final IOException e) {
             Log.i(TAG, "Native exception!");
@@ -134,6 +165,7 @@ public class ABCoreService extends Service {
             Log.i(TAG, e.getLocalizedMessage());
             removeNotification(this);
             mProcess = null;
+            mProcessTor = null;
             e.printStackTrace();
         }
         Log.i(TAG, "background Task finished");
@@ -148,7 +180,9 @@ public class ABCoreService extends Service {
 
         if (mProcess != null) {
             mProcess.destroy();
+            mProcessTor.destroy();
             mProcess = null;
+            mProcessTor = null;
         }
     }
 }
