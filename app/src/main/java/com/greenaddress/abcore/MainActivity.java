@@ -21,7 +21,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         final String useDistribution = prefs.getString("usedistribution", "core");
         mTvStatus.setText(getString(R.string.stoppedturnon, useDistribution, "knots".equals(useDistribution) ? Packages.BITCOIN_KNOTS_NDK : "liquid".equals(useDistribution) ? Packages.BITCOIN_LIQUID_NDK : Packages.BITCOIN_NDK));
+        Log.d(TAG, "postConfigure: onyl place switch is changed to on?");
         mSwitchCore.setText(R.string.switchcoreon);
         if (mSwitchCore.isChecked()) {
             mSwitchCore.setOnCheckedChangeListener(null);
@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
                     final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
                     final SharedPreferences.Editor e = prefs.edit();
                     e.putBoolean("magicallystarted", false);
+                    e.putBoolean("ON", true);
                     e.apply();
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(new Intent(MainActivity.this, ABCoreService.class));
@@ -104,6 +105,10 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }, 1000, 1000);
                 } else {
+                    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    final SharedPreferences.Editor e = prefs.edit();
+                    e.putBoolean("ON", false);
+                    e.apply();
                     final Intent i = new Intent(MainActivity.this, RPCIntentService.class);
                     i.putExtra("stop", "yep");
                     startService(i);
@@ -164,6 +169,13 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(mRpcResponseReceiver, rpcFilter);
 
         startService(new Intent(this, RPCIntentService.class));
+
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        if(prefs.getBoolean("ON",false)){
+            mSwitchCore.setChecked(true);
+
+        }
+
     }
 
     @Override
@@ -219,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case "localonion":
                     final String onion = intent.getStringExtra(RPCIntentService.PARAM_ONION_MSG);
+                    Log.d(TAG, "onReceive: onion: " + onion);
                     if (onion != null && mTimer != null) {
                         mTimer.cancel();
                         mTimer.purge();
