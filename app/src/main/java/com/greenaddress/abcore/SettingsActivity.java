@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Properties;
 
 import androidx.appcompat.app.ActionBar;
-
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
  * handset devices, settings are presented as a single list. On tablets,
@@ -121,6 +120,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
                 final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
                 final SharedPreferences.Editor e = prefs.edit();
+
                 e.putBoolean("restartOnBoot", p.getProperty("restartOnBoot", "0").equals("1"));
                 e.putBoolean("testnet", p.getProperty("testnet", "0").equals("1"));
                 e.putBoolean("upnp", p.getProperty("upnp", "0").equals("1"));
@@ -174,8 +174,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                     return true;
                 }
             });
-
-
             findPreference("pruning").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
                 public boolean onPreferenceChange(final Preference preference, final Object o) {

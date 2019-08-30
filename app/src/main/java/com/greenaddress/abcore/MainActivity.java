@@ -115,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
         mSwitchCore.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
                 if (isChecked) {
-
                     switchOn = true;
                     daemonStatus = DaemonStatus.STARTING;
                     mTvStatus.setText(getString(R.string.status_header, daemonStatus.toString()));
@@ -136,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -151,16 +149,13 @@ public class MainActivity extends AppCompatActivity {
         
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
         final String useDistribution = prefs.getString("usedistribution", "core");
         final String daemonVersion = "knots".equals(useDistribution) ? Packages.BITCOIN_KNOTS_NDK : "liquid".equals(useDistribution) ? Packages.BITCOIN_LIQUID_NDK : Packages.BITCOIN_NDK;
-
         getSupportActionBar().setTitle(R.string.title_activity_main);
         getSupportActionBar().setSubtitle(getString(R.string.subtitle, useDistribution));
         mTvDaemon.setText(getString(R.string.subtitle, useDistribution + " " + daemonVersion));
 
         setSwitch();
-
         final View.OnClickListener cliboard = new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
@@ -181,7 +176,6 @@ public class MainActivity extends AppCompatActivity {
             autoRestart();
             //mSwitchCore.setChecked(true);
         }
-
     }
 
     public void autoRestart(){
