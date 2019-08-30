@@ -4,9 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
+import android.preference.PreferenceManager;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -20,6 +23,12 @@ public class ConsoleActivity extends AppCompatActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_console);
+
+        final Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final String useDistribution = prefs.getString("usedistribution", "core");
+        getSupportActionBar().setSubtitle(getString(R.string.subtitle, useDistribution));
 
         final EditText console = findViewById(R.id.editText2);
         console.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -68,7 +77,7 @@ public class ConsoleActivity extends AppCompatActivity {
         @Override
         public void onReceive(final Context context, final Intent intent) {
             final String text = intent.getStringExtra(RPCIntentService.PARAM_OUT_MSG);
-            final EditText history = findViewById(R.id.editText);
+            final TextView history = findViewById(R.id.textView);
 
             switch (text) {
                 case "CONSOLE_REQUEST":
