@@ -11,9 +11,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,12 +24,14 @@ import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.os.Handler;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.qrcode.encoder.ByteMatrix;
 import com.google.zxing.qrcode.encoder.Encoder;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -114,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         mSwitchCore.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
                 if (isChecked) {
+
                     switchOn = true;
                     daemonStatus = DaemonStatus.STARTING;
                     mTvStatus.setText(getString(R.string.status_header, daemonStatus.toString()));
@@ -134,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -145,8 +148,10 @@ public class MainActivity extends AppCompatActivity {
         mQrCodeText = findViewById(R.id.textViewQr);
         mImageViewQr = findViewById(R.id.qrcodeImageView);
         setSupportActionBar(toolbar);
+        
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         final String useDistribution = prefs.getString("usedistribution", "core");
         final String daemonVersion = "knots".equals(useDistribution) ? Packages.BITCOIN_KNOTS_NDK : "liquid".equals(useDistribution) ? Packages.BITCOIN_LIQUID_NDK : Packages.BITCOIN_NDK;
 
@@ -155,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         mTvDaemon.setText(getString(R.string.subtitle, useDistribution + " " + daemonVersion));
 
         setSwitch();
+
         final View.OnClickListener cliboard = new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
@@ -169,6 +175,25 @@ public class MainActivity extends AppCompatActivity {
         daemonStatus = DaemonStatus.UNKNOWN;
         mTvStatus.setText(getString(R.string.status_header, daemonStatus.toString()));
         mSwitchCore.setText(R.string.switchcoreon);
+
+        boolean restart = prefs.getBoolean("restartOnBoot", false);
+        if(restart){
+            autoRestart();
+            //mSwitchCore.setChecked(true);
+        }
+
+    }
+
+    public void autoRestart(){
+        final Handler handler = new Handler();
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "run: starting now after 30 sec delay");
+                mSwitchCore.setChecked(true);
+            }
+        };
+        handler.postDelayed(task, 30000);
     }
 
     @Override
