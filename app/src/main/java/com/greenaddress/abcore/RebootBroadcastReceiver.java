@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 public class RebootBroadcastReceiver extends BroadcastReceiver {
 
@@ -14,7 +13,6 @@ public class RebootBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Log.d(TAG, "onPreferenceChange: "+ prefs.getBoolean("restartOnBoot", false));
         boolean restart = prefs.getBoolean("restartOnBoot", false);
 
         if(restart){

@@ -173,8 +173,8 @@ public class MainActivity extends AppCompatActivity {
 
         boolean restart = prefs.getBoolean("restartOnBoot", false);
         if(restart){
+            // Add 30 sec delay
             autoRestart();
-            //mSwitchCore.setChecked(true);
         }
     }
 
@@ -183,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
         Runnable task = new Runnable() {
             @Override
             public void run() {
-                Log.d(TAG, "run: starting now after 30 sec delay");
                 mSwitchCore.setChecked(true);
             }
         };
